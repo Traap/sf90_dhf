@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>$title$</title>
+    <meta name="author" content="$author$" />
+    <meta name="dcterms.date" content="$date$" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    $if(highlight-css)$
+      <style>$highlight-css$</style>
+    $endif$
+    $for(css)$
+      <link rel="stylesheet" href="$css$" />
+    $endfor$
+  </head>
+  <body>
+    $if(titleblock)$
+    $titleblock$
+    $endif$
+
+    $if(toc)$
+    <nav id="TOC" role="doc-toc">
+    $toc$
+    </nav>
+    $endif$
+
+    <main>
+    $body$
+    </main>
+  </body>
+</html>
