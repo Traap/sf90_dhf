@@ -1,4 +1,5 @@
 # File paths
+DHF_DIR      = ../sf90
 INPUT        = main.md
 OUTPUT_DIR   = output
 COMBINED     = $(OUTPUT_DIR)/combined.md
@@ -8,7 +9,6 @@ PREPROCESSOR = preprocess.py
 STYLE        = style.css
 TEMPLATE     = $(abspath template.html)
 
-# Pandoc options
 PANDOC_PDF_OPTS = \
 	--from markdown \
 	--standalone \
@@ -24,7 +24,6 @@ PANDOC_HTML_OPTS = \
 	--template=$(TEMPLATE) \
 	-o $@ $<
 
-# Default target
 all: \
 	$(OUTPUT_DIR)/images \
 	$(OUTPUT_DIR)/$(STYLE) \
@@ -66,20 +65,29 @@ $(OUTPUT_DIR)/favicon.ico: | $(OUTPUT_DIR)
 	touch $@
 
 check:
-	@echo "🔍 Running pre-build checks..."
-
+	@echo "🔍 Running pre-build checks"
 	@test -f $(INPUT) || (echo "Γ¥î Missing: $(INPUT)"; exit 1)
 	@test -f $(PREPROCESSOR) || (echo "❌ Missing: $(PREPROCESSOR)"; exit 1)
 	@test -f $(STYLE) || (echo "❌ Missing: $(STYLE)"; exit 1)
 	@test -f $(TEMPLATE) || (echo "❌ Missing: $(TEMPLATE)"; exit 1)
 	@test -d images || (echo "❌ Missing: images directory"; exit 1)
-
 	@echo "✅ All required files are present."
 
-# Preview HTML in browser via local server
 preview:
 	@echo "🌍 Serving HTML at http://localhost:8000"
 	@cd $(OUTPUT_DIR) && python3 -m http.server
+
+dhf.create:
+	@echo "📄 Setup Design History FIle"
+	./setup_dhf.sh
+
+dhf.remove:
+	@echo "🧹 Remove Design History File"
+	rm -rf $(DHF_DIR)
+
+dhf.build:
+	@echo "📄 Build Design History File"
+	@cd $(DHF_DIR) && docbld
 
 .PHONY: all clean check preview
 
