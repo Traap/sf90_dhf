@@ -1,7 +1,7 @@
 # File paths
 DHF_DIR      = ../sf90
 INPUT        = main.md
-OUTPUT_DIR   = output
+OUTPUT_DIR   = _build
 COMBINED     = $(OUTPUT_DIR)/combined.md
 HTML_OUTPUT  = $(OUTPUT_DIR)/document.html
 PDF_OUTPUT   = $(OUTPUT_DIR)/document.pdf
@@ -90,4 +90,3 @@ dhf.build:
 	@cd $(DHF_DIR) && docbld
 
 .PHONY: all clean check preview
-
