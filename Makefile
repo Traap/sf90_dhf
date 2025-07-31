@@ -1,6 +1,6 @@
 # File paths
 DHF_DIR      = ../sf90
-INPUT        = main.md
+INPUT        = '**/*.mdd'
 OUTPUT_DIR   = _build
 COMBINED     = $(OUTPUT_DIR)/combined.md
 HTML_OUTPUT  = $(OUTPUT_DIR)/document.html

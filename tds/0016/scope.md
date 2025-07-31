@@ -1,0 +1,3 @@
+## Scope
+
+Describe document scope.
