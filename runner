@@ -1,0 +1,1 @@
+make -f Makefile1 clean all

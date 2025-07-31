@@ -1,0 +1,90 @@
+# Makefile1 - Recursively build HTML and PDF documents from .mdd files
+
+DHF_DIR      = ../sf90
+DHF_SETUP    = ./setup_dhf.sh
+OUTPUT_DIR   = _build
+PREPROCESSOR = preprocess.py
+TEMPLATE  = $(abspath template.html)
+
+PANDOC_PDF_OPTS = \
+	--from markdown \
+	--standalone \
+	--toc \
+	--highlight-style tango \
+	-o $@ $<
+
+PANDOC_HTML_OPTS = \
+	--from markdown \
+	--standalone \
+	--toc \
+	--highlight-style tango \
+	--template=$(TEMPLATE) \
+	-o $@ $<
+
+MDD_FILES := $(shell find . -name '*.mdd')
+MD_FILES  := $(MDD_FILES:.mdd=.md)
+HTML_DOCS := $(patsubst %.md,$(OUTPUT_DIR)/%.html,$(MD_FILES))
+PDF_DOCS  := $(patsubst %.md,$(OUTPUT_DIR)/%.pdf,$(MD_FILES))
+
+.PHONY: all clean check preview
+
+# Default rule
+all: check $(HTML_DOCS) $(PDF_DOCS) copy-images
+
+# Clean build artifacts
+clean:
+	rm -rf _build
+	rm -f $(MD_FILES)
+
+# Preprocess each .mdd to .md
+%.md: %.mdd
+	@echo "🔄 Preprocessing $< -> $@"
+	python3 $(PREPROCESSOR) $< $@
+
+# Build HTML from Markdown
+_build/%.html: %.md
+	@echo "🌐 Build HTML $@"
+	mkdir -p $(dir $@)
+	pandoc $(PANDOC_HTML_OPTS)
+
+# Build PDF from Markdown
+_build/%.pdf: %.md
+	@echo "📄 Build PDF $@"
+	mkdir -p $(dir $@)
+	pandoc $(PANDOC_PDF_OPTS)
+
+# Copy image directories to _build if they exist
+copy-images:
+	@echo "🖼️ Copy images for HTML preview $@"
+	@find . -name '*.mdd' | while read src; do \
+	  dir=$$(dirname "$$src"); \
+	  if [ -d "$$dir/images" ]; then \
+	    echo "🎨  Copying images from $$dir/images to _build/$$dir"; \
+	    mkdir -p "_build/$$dir"; \
+	    cp -r "$$dir/images" "_build/$$dir/"; \
+	  fi \
+	done
+
+check:
+	@echo "🔍 Running pre-build checks"
+	@test -f $(INPUT) || (echo "❌ Missing: $(INPUT)"; exit 1)
+	@test -f $(PREPROCESSOR) || (echo "❌ Missing: $(PREPROCESSOR)"; exit 1)
+	@test -f $(STYLE) || (echo "❌ Missing: $(STYLE)"; exit 1)
+	@test -f $(TEMPLATE) || (echo "❌ Missing: $(TEMPLATE)"; exit 1)
+	@echo "✅ All required files are present."
+
+preview:
+	@echo "🌍 Serving HTML at http://localhost:8000"
+	@cd $(OUTPUT_DIR) && python3 -m http.server
+
+dhf.create:
+	@echo "📄 Setup Design History FIle"
+	$(DHF_SETUP)
+
+dhf.remove:
+	@echo "🧹 Remove Design History File"
+	rm -rf $(DHF_DIR)
+
+dhf.build:
+	@echo "📄 Build Design History File"
+	@cd $(DHF_DIR) && docbld
