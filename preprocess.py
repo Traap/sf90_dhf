@@ -3,49 +3,62 @@ import re
 from pathlib import Path
 import sys
 
-INCLUDE_PATTERN = re.compile(r'\[INCLUDE: ([^\]]+)\]')
+include_pattern = re.compile(r"\[INCLUDE:\s*(.+?)\s*\]")
 
-def preprocess(filepath: Path, seen=None, depth=0) -> str:
-    if seen is None:
-        seen = set()
-    if filepath in seen:
-        return f"[ERROR: Circular include detected: {filepath}]"
-    if not filepath.exists():
-        return f"[ERROR: File not found: {filepath}]"
+def resolve_includes(path: Path, visited: set) -> list[str]:
+    if path in visited:
+        print(f"⛔️ Skipping already included file (possible loop): {path}")
+        return [f"<!-- Skipping already included file: {path} -->"]
 
-    seen.add(filepath)
-    content = filepath.read_text(encoding='utf-8')
-    lines = []
+    visited.add(path)
 
-    for i, line in enumerate(content.splitlines(), start=1):
-        match = INCLUDE_PATTERN.search(line)
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except Exception as e:
+        print(f"⛔️ Failed to read file: {path}")
+        return [f"<!-- Error reading file: {path} -->"]
+
+    output = []
+    for line in lines:
+        match = include_pattern.search(line)
         if match:
-            include_path = (filepath.parent / match.group(1)).resolve()
-            included_content = preprocess(include_path, seen.copy(), depth + 1)
-            lines.append(f"<!-- Begin include: {include_path} -->")
-            lines.append(included_content)
-            lines.append(f"<!-- End include: {include_path} -->")
+            rel_include = match.group(1).strip()
+            include_path = (path.parent / rel_include).resolve(strict=False)
+
+            print(f"🔍 Resolving include from: {path}")
+            print(f"   → Relative path: {rel_include}")
+            print(f"   → Resolved path: {include_path}")
+
+            if not include_path.exists():
+                print(f"⚠️  Missing include: {include_path}")
+                output.append(f"<!-- Missing include: {include_path} -->")
+                continue
+
+            output.extend(resolve_includes(include_path, visited))
         else:
-            lines.append(line)
+            output.append(line)
 
-    return "\n".join(lines)
+    return output
 
-def add_line_numbers(text: str) -> str:
-    return "\n".join(f"{i:4}: {line}" for i, line in enumerate(text.splitlines(), start=1))
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: preprocess.py input.mdd output.md")
+        sys.exit(1)
+
+    input_path = Path(sys.argv[1]).resolve()
+    output_path = Path(sys.argv[2]).resolve()
+
+    print(f"📄 Preprocessing: {input_path}")
+    print(f"✍️  Writing output to: {output_path}")
+
+    visited = set()
+    result_lines = resolve_includes(input_path, visited)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(result_lines) + "\n", encoding="utf-8")
+
+    print(f"✅ Includes resolved and written to: {output_path}")
 
 if __name__ == "__main__":
-    import argparse
+    main()
 
-    parser = argparse.ArgumentParser(description="Resolve [INCLUDE: ...] statements in Markdown files.")
-    parser.add_argument("input", type=Path, help="Input Markdown file with [INCLUDE:] tags")
-    parser.add_argument("output", type=Path, help="Output file with includes resolved")
-    parser.add_argument("--line-numbers", action="store_true", help="Add line numbers to output")
-    args = parser.parse_args()
-
-    combined = preprocess(args.input)
-
-    if args.line_numbers:
-        combined = add_line_numbers(combined)
-
-    args.output.write_text(combined, encoding='utf-8')
-    print(f"✅ Includes resolved and written to: {args.output}")

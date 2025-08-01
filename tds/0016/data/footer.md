@@ -1,1 +1,1 @@
-[INCLUDE: ../../shared/footer.md]
+[INCLUDE: ../../../shared/footer.md]
